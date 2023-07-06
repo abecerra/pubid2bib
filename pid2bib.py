@@ -7,7 +7,7 @@
 # Copyright (C) 2023 - Andrés Becerra <andres.becerra@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License, version 3, as
+# it under the terms of the GNU General Public License, version 2, as
 # published by the Free Software Foundation.
 #
 # This program is distributed in the hope that it will be useful,
@@ -2716,8 +2716,8 @@ def fetchBibtex(doi: str) -> str:
     returns the bibtex bibliography for the doi
     raises an exception if the dx.doi.org service fails
     """
-    # accept = {'accept': 'application/x-bibtex'}
-    accept = {'accept': 'application/json'}
+    accept = {'accept': 'application/x-bibtex'}
+    # accept = {'accept': 'application/json'}
     url = f'http://dx.doi.org/{doi}'
     req = Request(url, headers=accept)
     try:
@@ -2764,11 +2764,11 @@ def doi2bibtex(doi: str) -> None:
     """
     try:
         bibtex_content = fetchBibtex(doi)
-        print(bibtex_content)
-        # title = getTitle(bibtex_content)
-        # filename = sanitizeFileName(title) + '.bib'
-        # createFile(filename, bibtex_content)
-        # print(f'File "{filename}" was created.')
+        # print(bibtex_content)
+        title = getTitle(bibtex_content)
+        filename = sanitizeFileName(title) + '.bib'
+        createFile(filename, bibtex_content)
+        print(f'File "{filename}" was created.')
     except Exception as error:
         print(f'Error processing {doi}:\n {error.reason}')
 
