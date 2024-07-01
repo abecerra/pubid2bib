@@ -11,8 +11,8 @@ PubMed, DOI and Google.
 ./pubid2bib.py publicationId1 publicationId2 ... publicationIdN
 ```
 
-Where publicationIds are well formed pmids or dois for scientific papers
-or isbns for books.
+Where publicationIds are well formed PMIDs or DOIs for scientific papers
+or ISBNs for books.
 
 Example:
 
@@ -94,9 +94,9 @@ if __name__ == '__main__':
 
 ## Abbreviations
 
-pmid: <a href="https://en.wikipedia.org/wiki/PubMed#PubMed_identifier">PubMed identifier</a>
+PMID: <a href="https://en.wikipedia.org/wiki/PubMed#PubMed_identifier">PubMed identifier</a>
 
-doi: <a href="https://www.doi.org/the-identifier/what-is-a-doi/">Digital Object Identifier</a>
+DOI: <a href="https://www.doi.org/the-identifier/what-is-a-doi/">Digital Object Identifier</a>
 
-isbn: <a href="https://en.wikipedia.org/wiki/ISBN">International Standard Book Number</a>
+ISBN: <a href="https://en.wikipedia.org/wiki/ISBN">International Standard Book Number</a>
 
