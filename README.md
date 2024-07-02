@@ -56,6 +56,9 @@ scripts.
 Asumming you have a file called publications.txt with publication identifiers in each line, e.g.:
 
 ```text
+31726262
+10.1021/acs.jced.5b00684
+0735619670
 38942015
 38917788
 38935715
