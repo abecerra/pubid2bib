@@ -8,7 +8,7 @@ PubMed, DOI and Google.
 ## Usage:
 
 ```bash
-./pubid2bib.py publicationId1 publicationId2 ... publicationIdN
+pubid2bib publicationId1 publicationId2 ... publicationIdN
 ```
 
 Where publicationIds are well formed PMIDs or DOIs for scientific papers
@@ -17,7 +17,7 @@ or ISBNs for books.
 Example:
 
 ```bash
-./pubid2bib.py 31726262 10.1021/acs.jced.5b00684 0735619670
+pubid2bib 31726262 10.1021/acs.jced.5b00684 0735619670
 ```
 
 Will create three BibTeX files in the current path, named:
@@ -73,7 +73,7 @@ input="publications.txt"
 while read -r pmid
 do
     echo "${pmid}"
-    pubid2bib.py "${pmid}"
+    pubid2bib "${pmid}"
 done < "$input"
 ```
 
@@ -81,7 +81,9 @@ done < "$input"
 
 You can use the function *dispatch* for each identifier
 ```python
-#!/bin/bash
+#!/usr/bin/env python
+
+
 if __name__ == '__main__':
     from pubid2bib import dispatch
     with open('publications.txt', 'r') as file_object:
