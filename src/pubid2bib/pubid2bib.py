@@ -1,57 +1,58 @@
 #!/usr/bin/env python
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# pubid2bib (Publication Id to BibTeX):
-#
-# a command line tool to fetch bibliographic entries for given publication
-# identifiers using online services offered by PubMed, DOI and Google
-#
-# Usage:
-#
-# pubid2bib.py publicationId1 publicationId2 ... publicationIdN
-#
-# where publicationIds are well formed pmids or dois for scientific papers
-# or isbns for books
-#
-# Example:
-#
-# pubid2bib.py 31726262 10.1021/acs.jced.5b00684 0735619670
-#
-# Will create three BibTeX files in the current path, named:
-#  - "Removal of dental alloys and titanium attenuates trace metals and
-#     biological effects on liver and kidney.bib"
-#  - "Thermodynamic Properties of R-227ea, R-365mfc, R-115, and R-13I1.bib"
-#  - "Code Complete.bib"
-#
-# The filenames will be the publication's titles and the
-# bibliographic entries will conform to Bibtex @article and @book
-# formats.
-#
-# pmid: PubMed identifier
-# https://en.wikipedia.org/wiki/PubMed#PubMed_identifier
-#
-# doi: Digital Object Identifier
-# https://www.doi.org/the-identifier/what-is-a-doi/
-#
-# isbn: International Standard Book Number
-# https://en.wikipedia.org/wiki/ISBN
+""""
+pubid2bib (Publication Id to BibTeX):
 
-# Copyright (C) 2024 - Andrés Becerra <andres.becerra@gmail.com>
-# Website: https://github.com/abecerra/pubid2bib
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License, version 3, as
-# published by the Free Software Foundation.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+Command line tool to fetch bibliographic entries for given publication
+identifiers using online services offered by PubMed, DOI and Google
 
+Usage:
+
+pubid2bib.py publicationId1 publicationId2 ... publicationIdN
+
+where publicationIds are well formed pmids or dois for scientific papers
+or isbns for books
+
+Example:
+
+pubid2bib.py 31726262 10.1021/acs.jced.5b00684 0735619670
+
+Will create three BibTeX files in the current path, named:
+ - "Removal of dental alloys and titanium attenuates trace metals and
+    biological effects on liver and kidney.bib"
+ - "Thermodynamic Properties of R-227ea, R-365mfc, R-115, and R-13I1.bib"
+ - "Code Complete.bib"
+
+The filenames will be the publication's titles and the
+bibliographic entries will conform to Bibtex @article and @book
+formats.
+
+pmid: PubMed identifier
+https://en.wikipedia.org/wiki/PubMed#PubMed_identifier
+
+doi: Digital Object Identifier
+https://www.doi.org/the-identifier/what-is-a-doi/
+
+isbn: International Standard Book Number
+https://en.wikipedia.org/wiki/ISBN
+
+Copyright (C) 2024 - Andrés Becerra <andres.becerra@gmail.com>
+Website: https://github.com/abecerra/pubid2bib
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License, version 3, as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+"""
 
 __title__ = "pubid2bib"
 __version__ = "0.1"
@@ -59,6 +60,8 @@ __author__ = "Andrés Becerra"
 __email__ = "andres.becerra@gmail.com"
 __website__ = "https://github.com/abecerra/pubid2bib"
 
+
+from dataclasses import dataclass, field
 from io import StringIO
 import json
 import re
@@ -69,36 +72,34 @@ from urllib.request import Request
 from xml.etree.ElementTree import fromstring
 
 
+@dataclass
 class Author:
     """Represents an Author."""
-
-    def __init__(self):
-        self.lastName: str = ""
-        self.foreName: str = ""
-        self.initials: str = ""
-        self.institution: str = ""
+    lastName: str = ""
+    foreName: str = ""
+    initials: str = ""
+    institution: str = ""
 
 
+@dataclass
 class Reference:
     """Represents a bibliographic entry."""
-
-    def __init__(self, pmid):
-        self.pmid: str = pmid
-        self.title: str = ""
-        self.authors: list[Author] = []
-        self.journal: str = ""
-        self.volume: str = ""
-        self.issue: str = ""
-        self.startPage: str = ""
-        self.endPage: str = ""
-        self.doi: str = ""
-        self.pbyear: str = ""
-        self.pbmonth: str = ""
-        self.issn: str = ""
-        self.journalAb: str = ""
-        self.copyright: str = ""
-        self.article_url: str = ""
-        self.abstract: str = ""
+    pmid: str = ""
+    title: str = ""
+    authors: list = field(default_factory=list)
+    journal: str = ""
+    volume: str = ""
+    issue: str = ""
+    startPage: str = ""
+    endPage: str = ""
+    doi: str = ""
+    pbyear: str = ""
+    pbmonth: str = ""
+    issn: str = ""
+    journalAb: str = ""
+    copyright: str = ""
+    article_url: str = ""
+    abstract: str = ""
 
 
 def main():
@@ -303,7 +304,8 @@ def parsePubmedXML(pmid: str, xml: str) -> Reference:
     returns Reference information retrieved from the XML string
     raises exception if xml content has an unexpected structure
     """
-    ref = Reference(pmid)
+    ref = Reference()
+    ref.pmid = pmid
     pubmedArticleSet = fromstring(xml)
     pubmedArticles = pubmedArticleSet.findall("PubmedArticle")
     if ((pubmedArticles is None) or (len(pubmedArticles) == 0)):
