@@ -16,13 +16,13 @@ or isbns for books
 
 Example:
 
-pubid2bib.py 31726262 10.1021/acs.jced.5b00684 0735619670
+pubid2bib.py 31726262 10.1021/acs.jced.5b00684 9789004548022
 
 Will create three BibTeX files in the current path, named:
  - "Removal of dental alloys and titanium attenuates trace metals and
     biological effects on liver and kidney.bib"
  - "Thermodynamic Properties of R-227ea, R-365mfc, R-115, and R-13I1.bib"
- - "Code Complete.bib"
+ - "The Accumulation of Waste - A political economy of systemic destruction.bib"
 
 The filenames will be the publication's titles and the
 bibliographic entries will conform to Bibtex @article and @book
@@ -85,6 +85,9 @@ class Author:
 class Reference:
     """Represents a bibliographic entry."""
     pmid: str = ""
+    isbn: str = ""
+    pages: str = ""
+    publisher: str = ""
     title: str = ""
     authors: list = field(default_factory=list)
     journal: str = ""
@@ -114,8 +117,8 @@ def main():
         print("Usage: pid2bib.py pid1 pid2 ... pidN")
         print("e.g. pid2bib.py 31726262")
         print("e.g. pid2bib.py 10.1021/acs.jced.5b00684")
-        print("e.g. pid2bib.py 0735619670")
-        print("e.g. pid2bib.py 31726262 10.1021/acs.jced.5b00684 0735619670")
+        print("e.g. pid2bib.py 9789004548022")
+        print("pid2bib.py 31726262 10.1021/acs.jced.5b00684 9789004548022")
         print("will create a bibtex files named with the publication(s) " +
               " title(s) in the current path")
         return
@@ -176,7 +179,7 @@ def pmid2bibtex(pmid: str) -> None:
     try:
         xml = fetchXMLfromPubmed(pmid)
         reference = parsePubmedXML(pmid, xml)
-        bibtex_content = createBibtexContent(pmid, reference)
+        bibtex_content = createPaperBibtexContent(pmid, reference)
         filename = sanitizeFileName(reference.title) + ".bib"
         createFile(filename, bibtex_content)
         print(f"File \"{filename}\" was created.")
@@ -193,10 +196,9 @@ def isbn2bibtex(isbn: str):
     """
     try:
         bookEntry = fetchGoogleBookInfo(isbn)
-        google_id = extractGoogleBookIdentifier(bookEntry)
-        bibtex_content = fetchBibtexFromGoogle(google_id)
-        title = getTitleFromBibtex(bibtex_content)
-        filename = sanitizeFileName(title) + ".bib"
+        reference = extractGoogleBookInfo(bookEntry)
+        bibtex_content = createBookBibtexContent(reference)
+        filename = sanitizeFileName(reference.title) + ".bib"
         createFile(filename, bibtex_content)
         print(f"File \"{filename}\" was created.")
     except Exception as error:
@@ -380,7 +382,7 @@ def parsePubmedXML(pmid: str, xml: str) -> Reference:
     return ref
 
 
-def createBibtexContent(pmid: str, reference: Reference) -> str:
+def createPaperBibtexContent(pmid: str, reference: Reference) -> str:
     """Creates bibtex contents with the bibliographic information given.
 
     Keyword arguments:
@@ -479,8 +481,8 @@ def fetchGoogleBookInfo(isbn: str) -> dict:
             raise Exception("googleapis.com/books is not responding")
 
 
-def extractGoogleBookIdentifier(book: dict):
-    """ Extracts the google identifier from a book entry
+def extractGoogleBookInfo(book: dict) -> Reference:
+    """ Extracts the book information
 
     Keyword arguments:
     book -- the book entry
@@ -490,27 +492,49 @@ def extractGoogleBookIdentifier(book: dict):
     if ("items" in book and
             isinstance(book["items"], list) and
             len(book["items"]) > 0):
-        google_id = book["items"][0]["id"]
-        return google_id
+        volumeInfo = book["items"][0]["volumeInfo"]
+        reference = Reference()
+        title = volumeInfo.get("title", "")
+        subtitle = volumeInfo.get("subtitle", "")
+        if (subtitle != ""):
+            reference.title = title + " - " + subtitle
+        else:
+            reference.title = title
+        reference.authors = volumeInfo.get("authors", "")
+        reference.pages = volumeInfo.get("pageCount", "--")
+        reference.pbyear = volumeInfo.get("publishedDate", "0000")[0:4]
+        reference.isbn = volumeInfo.get(
+            "industryIdentifiers", [{"identifier": "--"}])[0]["identifier"]
+        reference.publisher = volumeInfo.get("publisher", "")
+        return reference
     else:
-        raise Exception("Google book identifier was not found")
+        raise Exception("Bad formed book record")
 
 
-def fetchBibtexFromGoogle(google_id: str):
-    """ Fetches the bibtex bibliographic entry for a google book identifier
+def createBookBibtexContent(reference: Reference) -> str:
+    """Creates bibtex contents with the bibliographic information given.
 
     Keyword arguments:
-    google_id -- the google book identifier
-    returns the bibtex entry for the book
-    raises an exception if the google bibtex endpoint misbehaves
+    reference -- bibliographic data
+    returns bibliographic entry in bibtex format
     """
-    google_books_url = "https://books.google.com/books?output=bibtex&id="
-    url = f"{google_books_url}{google_id}"
-    with request.urlopen(url) as resp:
-        if resp.code == 200:
-            return resp.read().decode("utf-8")
-        else:
-            raise Exception("googleapis.com/books bibtex output failed")
+    if len(reference.authors) > 0:
+        authorsText = " and ".join(reference.authors)
+    else:
+        authorsText = ""
+
+    result = StringIO()
+    result.write(f"%{reference.isbn}\n")
+    result.write("@Book{isbn" + reference.isbn + ",\n")
+    appendFormattedField(result, "title", "{" +
+                         sanitizeBibtexField(reference.title) + "}")
+    appendFormattedField(result, "author", sanitizeBibtexField(authorsText))
+    appendFormattedField(result, "publisher", sanitizeBibtexField(
+        reference.publisher))
+    appendFormattedField(result, "pages", str(reference.pages))
+    appendFormattedField(result, "year", reference.pbyear)
+    result.write("   isbn = \"" + reference.isbn + "\"\n}\n")
+    return result.getvalue()
 
 
 def sanitizeFileName(text: str) -> str:
