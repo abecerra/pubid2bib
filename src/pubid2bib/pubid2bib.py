@@ -126,20 +126,23 @@ def main():
 
 def dispatch(publicationId: str) -> None:
     """Check paper identifier and dispatches according
-    to the type of paper identifier (pmid, DOI or ISBN)"""
+    to the type of paper identifier (pmid, DOI or ISBN)
+
+    publicationId -- a publication identifier (e.g 31726262)
+    """
     if "/" in publicationId:
         doi2bibtex(publicationId)
-        time.sleep(0.5)
+        delay()
         return
     if publicationId.isdigit():
         id_length = len(publicationId)
         if id_length == 8:
             pmid2bibtex(publicationId)
-            time.sleep(0.5)
+            delay()
             return
         if id_length in [10, 13]:
             isbn2bibtex(publicationId)
-            time.sleep(0.5)
+            delay()
             return
     else:
         print("Paper identifier not supported. Only pmid, DOI and ISBN" +
@@ -150,7 +153,6 @@ def dispatch(publicationId: str) -> None:
 def doi2bibtex(doi: str) -> None:
     """For the given DOI identifier, creates a bibtex bibliographic entry.
 
-    Keyword arguments:
     doi -- the DOI identifier for the article (e.g. 10.1021/acs.jced.5b00684)
     Side effect: creates a bibtex file in the current path
     """
@@ -168,7 +170,6 @@ def doi2bibtex(doi: str) -> None:
 def pmid2bibtex(pmid: str) -> None:
     """For the given pubmed identifier, creates a bibtex bibliographic entry.
 
-    Keyword arguments:
     pmid -- a pubmed identifier (e.g 31726262)
     Side effect: creates a bibtex file in the current path
     """
@@ -190,13 +191,12 @@ def pmid2bibtex(pmid: str) -> None:
 def isbn2bibtex(isbn: str):
     """For the given isbn, creates a bibtex bibliographic entry.
 
-    Keyword arguments:
     isbn -- an ISBN book identifier (e.g 0735619670)
     Side effect: creates a bibtex file in the current path
     """
     try:
         bookEntry = fetchGoogleBookInfo(isbn)
-        reference = extractGoogleBookInfo(bookEntry)
+        reference = extractGoogleBookInfo(isbn, bookEntry)
         bibtex_content = createBookBibtexContent(reference)
         filename = sanitizeFileName(reference.title) + ".bib"
         createFile(filename, bibtex_content)
@@ -208,10 +208,9 @@ def isbn2bibtex(isbn: str):
 def fetchBibtexFromDOI(doi: str) -> str:
     """Fetch the bibliography for an article.
 
-    Keyword arguments:
     doi -- the DOI for the article
-    returns the bibtex bibliography for the doi
-    raises an exception if the dx.doi.org service fails
+    Returns the bibtex bibliography for the doi
+    Raises an exception if the dx.doi.org service fails
     """
     accept = {"accept": "application/x-bibtex"}
     url = f"http://dx.doi.org/{doi}"
@@ -227,9 +226,8 @@ def fetchBibtexFromDOI(doi: str) -> str:
 def addNewlinesToBibtexFromDOI(bibtex_content: str) -> str:
     """Add new lines to BibTeX output
 
-    Keyword arguments:
     bibtex_content -- the bibliography in BibTeX
-    returns formatted BibTeX
+    Returns formatted BibTeX
     """
     result = (bibtex_content
               .replace(" @article", "@article")
@@ -253,9 +251,8 @@ def addNewlinesToBibtexFromDOI(bibtex_content: str) -> str:
 def getTitleFromBibtex(bibtex_content: str) -> str:
     """Finds the title in the BibTeX content.
 
-    Keyword arguments:
     bibtex_content -- the bibliography in BibTeX
-    returns the publication title
+    Returns the publication title
     """
     title = (re.search(r"title=(.*?)\n", bibtex_content)
              .group()
@@ -268,28 +265,30 @@ def getTitleFromBibtex(bibtex_content: str) -> str:
 def createFile(filename: str, content: str) -> None:
     """Creates a file in the current path with the given content.
 
-    Keyword arguments:
     filename -- the file name
     content  -- content to write in the file
     Side effect: creates a file in the current path
-    raises exception if output file can not be created
+    Raises exception if output file can not be created
     """
     with open(filename, "w") as file_object:
         file_object.write(content)
 
 
+def delay():
+    """Delays consecutive calls to (pubmed, doi, google servers)"""
+    time.sleep(0.5)
+
+
 def fetchXMLfromPubmed(pmid: str) -> str:
     """Fetch the pubmed XML bibliography for an article.
 
-    Keyword arguments:
     pmid -- the pubmed identifier for the article
-    returns the xml bibliography for the pmid
-    raises an exception if the NCBI eutils service fails
+    Returns the xml bibliography for the pmid
+    Raises an exception if the NCBI eutils service fails
     """
     eutils = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
     options = "?db=pubmed&retmode=xml&id="
     url = f"{eutils}{options}{pmid}"
-    # try:
     with request.urlopen(url) as resp:
         if resp.code == 200:
             return resp.read().decode("utf-8")
@@ -300,11 +299,10 @@ def fetchXMLfromPubmed(pmid: str) -> str:
 def parsePubmedXML(pmid: str, xml: str) -> Reference:
     """Extracts information from pubmed XML content.
 
-    Keyword arguments:
     pmid -- the pubmed identifier
     xml -- pubmed bibliographic entry in XML format
-    returns Reference information retrieved from the XML string
-    raises exception if xml content has an unexpected structure
+    Returns Reference information retrieved from the XML string
+    Raises exception if xml content has an unexpected structure
     """
     ref = Reference()
     ref.pmid = pmid
@@ -385,10 +383,9 @@ def parsePubmedXML(pmid: str, xml: str) -> Reference:
 def createPaperBibtexContent(pmid: str, reference: Reference) -> str:
     """Creates bibtex contents with the bibliographic information given.
 
-    Keyword arguments:
     pmid -- the pubmed identifier
     reference -- bibliographic data
-    returns bibliographic entry in bibtex format
+    Returns bibliographic entry in bibtex format
     """
     if len(reference.authors) > 0:
         authorsText = " and ".join(map(formatAuthor, reference.authors))
@@ -400,7 +397,6 @@ def createPaperBibtexContent(pmid: str, reference: Reference) -> str:
     else:
         pages = reference.startPage
 
-    # month = monthToNumber(reference.pbmonth)
     if reference.journalAb != "":
         theJournal = reference.journalAb
     else:
@@ -435,7 +431,7 @@ def createPaperBibtexContent(pmid: str, reference: Reference) -> str:
                              sanitizeBibtexField(reference.copyright))
     appendFormattedField(result, "abstract", "{" +
                          sanitizeBibtexField(reference.abstract) + "}")
-    result.write("   note = {" + notes.getvalue() + "}\n}\n")
+    result.write("  note = {" + notes.getvalue() + "}\n}\n")
     return result.getvalue()
 
 
@@ -443,13 +439,12 @@ def appendFormattedField(stringBuffer: StringIO, name: str,
                          value: str) -> None:
     """Appends a bibtex fragment for one field.
 
-    Keyword arguments:
     stringBuffer -- an existing StringIO to append the text
     name         -- the name of the bibtex field
     value        -- the value for the bibtex field
     Side Effect: appends text to stringBuffer
     """
-    stringBuffer.write(f"   {name} = \"")
+    stringBuffer.write(f"  {name} = \"")
     stringBuffer.write(value)
     stringBuffer.write("\",\n")
 
@@ -457,9 +452,8 @@ def appendFormattedField(stringBuffer: StringIO, name: str,
 def formatAuthor(author: Author) -> str:
     """Appends a bibtex fragment for one author.
 
-    Keyword arguments:
     author -- the author
-    returns a string representing the author
+    Returns a string representing the author
     """
     return author.lastName + ", " + author.initials + "."
 
@@ -467,10 +461,9 @@ def formatAuthor(author: Author) -> str:
 def fetchGoogleBookInfo(isbn: str) -> dict:
     """ Fetch book by isbn
 
-    Keyword arguments:
     isbn -- the ISBN identifier for the book
-    returns the google information for the book
-    raises an exception if the google api fails
+    Returns the google information for the book
+    Raises an exception if the google api fails
     """
     google_books_url = "https://www.googleapis.com/books/v1/volumes?q=isbn:"
     url = f"{google_books_url}{isbn}"
@@ -481,19 +474,19 @@ def fetchGoogleBookInfo(isbn: str) -> dict:
             raise Exception("googleapis.com/books is not responding")
 
 
-def extractGoogleBookInfo(book: dict) -> Reference:
+def extractGoogleBookInfo(isbn: str, book: dict) -> Reference:
     """ Extracts the book information
 
-    Keyword arguments:
     book -- the book entry
-    returns the google book identifier
-    raises an exception if the book entry has an unexpected structure
+    Returns the google book identifier
+    Raises an exception if the book entry has an unexpected structure
     """
     if ("items" in book and
             isinstance(book["items"], list) and
             len(book["items"]) > 0):
-        volumeInfo = book["items"][0]["volumeInfo"]
+        volumeInfo = book["items"][0].get("volumeInfo", {})
         reference = Reference()
+        reference.isbn = isbn
         title = volumeInfo.get("title", "")
         subtitle = volumeInfo.get("subtitle", "")
         if (subtitle != ""):
@@ -503,20 +496,17 @@ def extractGoogleBookInfo(book: dict) -> Reference:
         reference.authors = volumeInfo.get("authors", "")
         reference.pages = volumeInfo.get("pageCount", "--")
         reference.pbyear = volumeInfo.get("publishedDate", "0000")[0:4]
-        reference.isbn = volumeInfo.get(
-            "industryIdentifiers", [{"identifier": "--"}])[0]["identifier"]
         reference.publisher = volumeInfo.get("publisher", "")
         return reference
     else:
-        raise Exception("Bad formed book record")
+        raise Exception("unexpected book format")
 
 
 def createBookBibtexContent(reference: Reference) -> str:
     """Creates bibtex contents with the bibliographic information given.
 
-    Keyword arguments:
     reference -- bibliographic data
-    returns bibliographic entry in bibtex format
+    Returns bibliographic entry in bibtex format
     """
     if len(reference.authors) > 0:
         authorsText = " and ".join(reference.authors)
@@ -533,16 +523,15 @@ def createBookBibtexContent(reference: Reference) -> str:
         reference.publisher))
     appendFormattedField(result, "pages", str(reference.pages))
     appendFormattedField(result, "year", reference.pbyear)
-    result.write("   isbn = \"" + reference.isbn + "\"\n}\n")
+    result.write("  isbn = \"" + reference.isbn + "\"\n}\n")
     return result.getvalue()
 
 
 def sanitizeFileName(text: str) -> str:
     """Removes dot at the end of the text and other characters
 
-    Keyword arguments:
     text -- the text string e.g. "s{o[m]et}hing."
-    returns new string with characters removed e.g. "something"
+    Returns new string with characters removed e.g. "something"
     """
     result = text.strip().translate({
             ord("{"): None,
@@ -561,9 +550,8 @@ def sanitizeFileName(text: str) -> str:
 def sanitizeBibtexField(text: str) -> str:
     """Transforms problematic unicode characters to their LaTeX code
 
-    Keyword arguments:
     text -- a text string
-    returns a modified string with problematic characters replaced
+    Returns a modified string with problematic characters replaced
     Adapted from:
     https://gitlab.com/crossref/rest_api/-/blob/main/src/cayenne/latex.clj
     """
