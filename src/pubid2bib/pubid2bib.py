@@ -461,7 +461,7 @@ def formatAuthor(author: Author) -> str:
 def fetchGoogleBookInfo(isbn: str) -> dict:
     """ Fetch book by isbn
 
-        isbn -- the ISBN identifier for the book
+    isbn -- the ISBN identifier for the book
     Returns the google information for the book
     Raises an exception if the google api fails
     """
