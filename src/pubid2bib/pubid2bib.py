@@ -19,10 +19,10 @@ Example:
 pubid2bib.py 31726262 10.1021/acs.jced.5b00684 9789004548022
 
 Will create three BibTeX files in the current path, named:
- - "Removal of dental alloys and titanium attenuates trace metals and
-    biological effects on liver and kidney.bib"
- - "Thermodynamic Properties of R-227ea, R-365mfc, R-115, and R-13I1.bib"
- - "The Accumulation of Waste - A political economy of systemic destruction.bib"
+ - Removal of dental alloys and titanium attenuates trace metals and
+    biological effects on liver and kidney.bib
+ - Thermodynamic Properties of R-227ea, R-365mfc, R-115, and R-13I1.bib
+ - The Accumulation of Waste - A political economy of systemic destruction.bib
 
 The filenames will be the publication's titles and the
 bibliographic entries will conform to Bibtex @article and @book
